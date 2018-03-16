@@ -1,12 +1,13 @@
 #include <cstdio>
 
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
 struct Pos {
     int x, y;
-    Pos(): x(0), y(0) {};
+    Pos(): x(1), y(1) {};
 };
 
 int main() {
@@ -17,8 +18,18 @@ int main() {
     U_.y = UR.y = UL.y = s;
     D_.y = DR.y = DL.y = 1;
     _L.x = UL.x = DL.x = 1;
-    _R.x = DR.x = DR.x = s;
-    
+    _R.x = DR.x = UR.x = s;
+
+    cout << "U_ " << U_.x << ' ' << U_.y << '\n'
+         << "D_ " << D_.x << ' ' << D_.y << '\n'
+         << "_R " << _R.x << ' ' << _R.y << '\n'
+         << "_L " << _L.x << ' ' << _L.y << '\n'
+         << "DR " << DR.x << ' ' << DR.y << '\n'
+         << "UR " << UR.x << ' ' << UR.y << '\n'
+         << "DL " << DL.x << ' ' << DL.y << '\n'
+         << "UL " << UL.x << ' ' << UL.y << '\n' ;
+    cout << "\n\n\n\n";
+
     Pos p;
     while(k--) {
         scanf("%d%d", &p.x, &p.y);
@@ -55,7 +66,7 @@ int main() {
             DR.y = p.y + 1;
         }
     }
-    
+/*    
     cout << "U_ " << U_.x << ' ' << U_.y << '\n'
          << "D_ " << D_.x << ' ' << D_.y << '\n'
          << "_R " << _R.x << ' ' << _R.y << '\n'
@@ -64,12 +75,12 @@ int main() {
          << "UR " << UR.x << ' ' << UR.y << '\n'
          << "DL " << DL.x << ' ' << DL.y << '\n'
          << "UL " << UL.x << ' ' << UL.y << '\n' ;
-        
+*/        
     
     printf("%d\n", U_.y - D_.y
                  + _R.x - _L.x
-                 + UR.y - DL.y
-                 + UL.y - DR.y);
+                 + min(UR.y - DL.y, UR.x - DL.x)
+                 + min(UL.y - DR.y, DR.x - UL.x));
     
 
     return 0;
