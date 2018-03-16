@@ -1,7 +1,6 @@
 #include <cstdio>
 
 #include <iostream>
-#include <algorithm>
 
 using namespace std;
 
@@ -10,26 +9,52 @@ struct Pos {
     Pos(): x(1), y(1) {};
 };
 
+struct Line {
+    int xmin, xmax, ymin, ymax;
+}
+
+bool pos_in_line(const Pos & p, const Line & l) {
+    return    l.x >= p.xmin
+           && l.x <= p.xmax 
+           && l.y >= p.ymin
+           && l.y <= p.ymax;
+}
+
 int main() {
     int s, k;
-    Pos U_, UR, _R, DR, D_, DL, _L, UL, q;
+    Line U_, UR, _R, DR, D_, DL, _L, UL;
+    Pos q;
     
     scanf("%d%d%d%d", &s, &k, &q.x, &q.y);
-    U_.y = UR.y = UL.y = s;
-    D_.y = DR.y = DL.y = 1;
-    _L.x = UL.x = DL.x = 1;
-    _R.x = DR.x = UR.x = s;
-
-    cout << "U_ " << U_.x << ' ' << U_.y << '\n'
-         << "D_ " << D_.x << ' ' << D_.y << '\n'
-         << "_R " << _R.x << ' ' << _R.y << '\n'
-         << "_L " << _L.x << ' ' << _L.y << '\n'
-         << "DR " << DR.x << ' ' << DR.y << '\n'
-         << "UR " << UR.x << ' ' << UR.y << '\n'
-         << "DL " << DL.x << ' ' << DL.y << '\n'
-         << "UL " << UL.x << ' ' << UL.y << '\n' ;
-    cout << "\n\n\n\n";
-
+    U_.xmin = U_.xmax = D_.xmin = D_xmax = q.x;
+    U_.ymin = q.y + 1;
+    U_.xmax = s;
+    D_.ymin = 1;
+    D_.ymax = q - 1;
+    
+    int diff = abs(q.x - q.y);
+    int s2 = s / 2;
+    
+    UR.xmin = q.x + 1;
+    UR.xmax = (q.y > s2) ? (s - diff) : s;
+    UR.ymin = q.y + 1;
+    UR.ymax = (q.x > s2) ? (s - diff) : s;
+    
+    UL.xmin = (q.y > s2) ? diff : 1;
+    UL.xmax = q.x - 1;
+    UL.ymin = q.y + 1;
+    UL.ymax = (q.x < s2) ? (s - diff) : s;
+    
+    DL.xmin = (q.y < s2) ? diff : 1;
+    DL.xmax = q.x - 1;
+    DL.ymin = (q.x < s2) ? diff : 1;
+    DL.ymax = q.y - 1;
+    
+    DR.xmin = q.x + 1;
+    DR.xmax = (q.y < s2) ? (s - diff) : s;
+    DR.ymin = (q.x > s2) ? diff : 1;
+    DR.ymax = q.y - 1;
+//----------------------------------------------------------------
     Pos p;
     while(k--) {
         scanf("%d%d", &p.x, &p.y);
@@ -79,8 +104,8 @@ int main() {
     
     printf("%d\n", U_.y - D_.y
                  + _R.x - _L.x
-                 + min(UR.y - DL.y, UR.x - DL.x)
-                 + min(UL.y - DR.y, DR.x - UL.x));
+                 + UR.y - DL.y
+                 + UL.y - DR.y);
     
 
     return 0;
