@@ -42,9 +42,37 @@ void task_1() {
         return l.second < r.second;}))).second << endl;
 }
 
+void task_2() {
+    map<string, int> var;
+    string var_name, var_cond, command, cond_op, _if;
+    int delta, cond, highest_value = -2^31;
+    while(cin >> var_name &&
+          cin >> command &&
+          cin >> delta &&
+          cin >> _if &&
+          cin >> var_cond &&
+          cin >> cond_op &&
+          cin >> cond) {
+        if(check_cond(var[var_cond], cond_op, cond)) {
+            if(command == "inc")
+                var[var_name] += delta;
+            else
+                var[var_name] -= delta;
+			highest_value = max(highest_value, var[var_name]);
+        }
+    }
+    for(const auto & elem: var)
+        cout << elem.first << " = " << elem.second << endl;
+    cout << (*(max_element(var.cbegin(), var.cend(), [](const pair<string, int> & l,
+                                                        const pair<string, int> & r) {
+        return l.second < r.second;}))).second << endl;
+    
+	cout << "Highest value = " << highest_value << endl;
+}
+
 int main()
 {
-    task_1();
+    task_2();
     
     return 0;
 }
