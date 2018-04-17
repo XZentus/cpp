@@ -3,7 +3,7 @@
 
 using namespace std;
 
-const int N = 5;
+const int N = 256;
 
 void print_arr(int * array) {
     for(int i = 0; i < N; i += 1)
@@ -24,15 +24,16 @@ void task_1() {
         cin >> c;
         
         for(int i = 0; i < length / 2; i += 1) {
-            int tmp = array[i % N];
-            array[i % N] = array[(i + length) % N];
-            array[(i + length) % N] = tmp;
+            int tmp = array[(current_position + i) % N];
+            array[(current_position + i) % N] = array[(current_position + length - 1 - i) % N];
+            array[(current_position + length - 1 - i) % N] = tmp;
         }
         print_arr(array);
-        current_position += length + skip_size;
+        current_position += (length + skip_size) % N;
         skip_size += 1;
             
     }
+    cout << array[0] * array[1] << endl;
     return;
 }
 
