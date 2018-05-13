@@ -28,6 +28,12 @@ make_bin_op(div,  /);
 
 #undef make_bin_op
 
+#define make_unary_op(_op_name, _op)  struct _op_name : public expr {      \
+    expr _expr;                                                           \
+    _op_name(expr val): _expr(val) {};        \
+    double operator()(double arg) { return _expr(arg) ; };  \
+}
+
 int main()
 {
     std::cout << "Hello, world!\n";
