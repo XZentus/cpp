@@ -10,17 +10,6 @@ string pandig = "7654321";
 
 vector < bool > is_prime ( limit, true );
 
-bool is_pandig( size_t n ) {
-    bool digits[10] = { 0 };
-    while ( n > 0 ) {
-        size_t tmp = n % 10;
-        if ( !tmp || digits[tmp] )
-            return false;
-        n /= 10;
-    }
-    return true;
-}
-
 size_t next_step ( size_t step ) {
     step += 2;
     while (!is_prime[step])
