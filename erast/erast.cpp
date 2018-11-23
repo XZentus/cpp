@@ -7,7 +7,7 @@
 
 using namespace std;
 
-const size_t LIMIT        = 8007,
+const size_t LIMIT        = 10000000,
              BITS_IN_BYTE = 8,
              DB_SIZE      = LIMIT/BITS_IN_BYTE + 1;
 
@@ -20,6 +20,11 @@ void drop_bit(size_t i) {
 bool is_prime(const size_t & i) {
     return erast[i / BITS_IN_BYTE] & (0x01 << (i % BITS_IN_BYTE));
 }
+
+const string ACCESSOR = 
+"bool is_prime(const size_t & i) {\n"
+"    return erast[i / BITS_IN_BYTE] & (0x01 << (i % BITS_IN_BYTE));\n"
+"}\n";
 
 size_t next_prime(size_t i) {
     i += 1;
@@ -89,17 +94,22 @@ void print_primes() {
 
 int main()
 {
-    cout << "DB_SIZE = " << DB_SIZE << '\n'
-         << "LIMIT   = " << LIMIT << '\n';
     init();
+
+    cout << "const size_t LIMIT        = " << LIMIT << ",\n"
+         << "             BITS_IN_BYTE = " << BITS_IN_BYTE << ",\n"
+         << "             DB_SIZE      = LIMIT/BITS_IN_BYTE + 1; // " << DB_SIZE << "\n\n";
+
+    cout << "unsigned char erast[DB_SIZE] = \n";
+
     
-    print_erast_hex_simple(16);
+    print_erast_hex_simple(32);
     
-    cout << "\n\n";
+    cout << "\n\n" << ACCESSOR;
     
-    print_erast_dec_simple(16);
+    // print_erast_dec_simple(32);
     
-    cout << "\n\n";
+    // cout << "\n\n";
     /*
     for(size_t i = 2; i < LIMIT; i = next_prime(i))
         if(is_prime(i))
