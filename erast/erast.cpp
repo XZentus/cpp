@@ -7,7 +7,7 @@
 
 using namespace std;
 
-const size_t LIMIT        = 1000,
+const size_t LIMIT        = 8007,
              BITS_IN_BYTE = 8,
              DB_SIZE      = LIMIT/BITS_IN_BYTE + 1;
 
@@ -46,27 +46,45 @@ void print_erast_bits() {
     cout << endl;
 }
 
-void print_erast_hex_simple(const size_t & row_len) {
+void print_erast_hex_simple(const size_t & row_len = 16, size_t row_offset = 4) {
+    string newstr = "\n";
+    while ( row_offset-- )
+        newstr += ' ';
+
+    cout << '{' << newstr;
+
     cout << hex << uppercase << setfill('0');
     for(size_t i = 0; i < DB_SIZE - 1; i += 1) {
         cout << "0x" << setw(2) << (erast[i] & 0xff) << ", ";
         if ( (i % row_len) == (row_len - 1) )
-            cout << '\n';
+            cout << newstr;
     }
     cout << "0x" << (erast[DB_SIZE - 1] & 0xff);
     
     cout << dec << nouppercase << setfill(' ');
+    cout << "\n}";
 }
 
-void print_erast_dec_simple(const size_t & row_len) {
-    const int w = 3;
+void print_erast_dec_simple(const size_t & row_len = 16, size_t row_offset = 4) {
+    string newstr = "\n";
+    while ( row_offset-- )
+        newstr += ' ';
+
+    cout << '{' << newstr;
     for(size_t i = 0; i < DB_SIZE - 1; i += 1) {
-        cout << setw(w) << (erast[i] & 0xff) << ", ";
+        cout << setw(3) << (erast[i] & 0xff) << ", ";
         if ( (i % row_len) == (row_len - 1) )
-            cout << '\n';
+            cout << newstr;
     }
-    cout << setw(w) << (erast[DB_SIZE - 1] & 0xff);
+    cout << setw(3) << (erast[DB_SIZE - 1] & 0xff);
     
+    cout << "\n}";
+}
+
+void print_primes() {
+    for(size_t i = 2; i < LIMIT; i = next_prime(i))
+        if(is_prime(i))
+            cout << i << ' ';
 }
 
 int main()
