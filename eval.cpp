@@ -110,7 +110,7 @@ Expr::Expr(const int & depth) {
             type = Arg;
         else {
             type = Num;
-            n = dis(rd);
+            n = new_rng(rd);
         }
         return;
     }
@@ -126,7 +126,7 @@ Expr::Expr(const int & depth) {
         type = Arg;
     else {
         type = Num;
-        n = dis(rd);
+        n = new_rng(rd);
     }
 }
 
