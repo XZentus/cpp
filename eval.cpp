@@ -33,6 +33,8 @@ const size_t DEPTH                = 10;
 random_device rd;
 mt19937 gen(rd());
 uniform_real_distribution<> dis(0.0, 1.0);
+uniform_real_distribution<> mut_rng(MUTATE_MIN, MUTATE_MAX);
+uniform_real_distribution<> new_rng(MUTATE_MIN, MUTATE_MAX);
 
 enum etype { Add, Sub, Mul, Div, // arity 2
              Sin, Cos, Tan,      // arity 1
@@ -56,6 +58,8 @@ public:
     double eval(const double &);
     
     void simplify(const int &);
+    void mutate(const int &);
+    
     etype type_of() const;
     double get_n() const;
     
@@ -126,20 +130,54 @@ Expr::Expr(const int & depth) {
     }
 }
 
+void Expr::mutate(const int & depth) {
+    double r1 = dis(rd);
+    
+    if(depth <= 0) {
+        if(type == Arg && r1 < MUTATE_FUN) {
+            type = Num;
+            n = new_rng(rd);
+        }
+        else if(type == Num && r1 < MUTATE_FUN)
+            type = Arg;
+        else if(type == Num && r1 < MUTATE_NUM)
+            n += mut_rng(rd);
+        return;
+    }
+    // TODO: ...
+/*         if depth == 0 {
+            return;
+        }
+        let mut rng = thread_rng();
+        let p1: f64 = rng.gen();
+        let d1 = depth - 1;
+
+        if (p1 < MUTATE_FUN && self.is_fun()) ||
+           (p1 < MUTATE_ARG && self.is_arg()) {
+            *self = Expr::generate_with_depth(depth);
+        }
+
+        match self {
+            Add(e1, e2) | Sub(e1, e2) |
+            Mul(e1, e2) | Div(e1, e2)   => { e1.mutate_with_depth(d1); e2.mutate_with_depth(d1) },
+            Sin(e1) | Cos(e1) | Tan(e1) => { e1.mutate_with_depth(d1); },
+            Const(n)                    => if p1 < MUTATE_NUM {
+                    *n += rng.gen_range(MUTATE_MIN, MUTATE_MAX);
+                }
+            _ => (),
+        } */
+}
+
 double Expr::get_n() const {
     return n;
 }
 
 ostream & operator<<(ostream & os, const Expr & e) {
     etype this_type = e.type_of();
-    if(this_type == Arg) {
+    if(this_type == Arg)
         os << 'x';
-        return os;
-    }
-    else if(this_type == Num) {
+    else if(this_type == Num)
         os << e.get_n();
-        return os;
-    }
     else if(this_type > fun_arity_1) {
         switch(this_type) {
             case Sin:
@@ -151,7 +189,6 @@ ostream & operator<<(ostream & os, const Expr & e) {
             case Tan:
                 os << "sin(" << *e.left << ')';
         }
-        return os;
     }
     else { // arity = 2
         etype ltype = (*e.left).type_of(),
