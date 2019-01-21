@@ -1,5 +1,7 @@
 #include <iostream>
 #include <memory>
+#include <random>
+
 #include <cmath>
 
 using namespace std;
@@ -28,50 +30,147 @@ const double EXCEPTION_WEIGHT     = 10000.0;
 
 const size_t DEPTH                = 10;
 
+random_device rd;
+mt19937 gen(rd());
+uniform_real_distribution<> dis(0.0, 1.0);
+
+enum etype { Add, Sub, Mul, Div, // arity 2
+             Sin, Cos, Tan,      // arity 1
+             Num,
+             Arg };
+const auto fun_arity_2 = Div;
+const auto fun_arity_1 = Tan;
+
 class Expr {
-    enum etype { Add, Sub, Mul, Div, Sin, Cos, Tan, Num, Arg };
     
     etype type;
     
     unique_ptr<Expr> left;
     unique_ptr<Expr> right;
     double n;
-    
-    Expr(const size_t &);
+
+public:    
+    Expr(const int &);
     
     double operator()(const double &);
+    double eval(const double &);
     
-    void simplify(const size_t &);
+    void simplify(const int &);
+    etype type_of() const;
+    double get_n() const;
+    
+    friend ostream & operator<<(ostream &, const Expr &);
 };
 
+double Expr::eval(const double & x) {
+    return (*this)(x);
+}
+
 double Expr::operator()(const double & x) {
-    double left = 0, right = 0;
-    if(this->type < Num)
-        left = this->left->operator()(x);
-    if(this->type < Sin)
-        right = this->right->operator()(x);
+    double l = 0, r = 0;
+    if(type < Num)
+        l = left->eval(x);
+    if(type < Sin)
+        r = right->eval(x);
     switch(this->type) {
         case Add:
-            return left + right;
+            return l + r;
         case Sub:
-            return left - right;
+            return l - r;
         case Mul:
-            return left * right;
+            return l * r;
         case Div:
-            return left / right;
+            return l / r;
         case Sin:
-            return sin(left);
+            return sin(l);
         case Cos:
-            return cos(left);
+            return cos(l);
         case Tan:
-            return tan(left);
+            return tan(l);
         case Num:
-            return this->n;
+            return n;
+        default:
+            return x;
     }
-    return x;
 }
+
+etype Expr::type_of() const {
+    return type;
+}
+
+Expr::Expr(const int & depth) {
+    double r1 = dis(rd);
     
+    if(depth < 1) {
+        if(r1 < ARG_PROBABILITY)
+            type = Arg;
+        else {
+            type = Num;
+            n = dis(rd);
+        }
+        return;
+    }
+    
+    if(r1 < FUNCTION_PROBABILITY) {
+        left = make_unique<Expr>(depth - 1);
+        type = static_cast<etype>(rd() % (fun_arity_2 + 1));
+        if(type <= fun_arity_2)
+            right = make_unique<Expr>(depth - 1);
+        return;
+    }
+    else if(r1 < ARG_PROBABILITY)
+        type = Arg;
+    else {
+        type = Num;
+        n = dis(rd);
+    }
+}
+
+double Expr::get_n() const {
+    return n;
+}
+
+ostream & operator<<(ostream & os, const Expr & e) {
+    etype this_type = e.type_of();
+    /*if(this_type == Arg)
+    if(this_type > fun_arity_1) {
+        if(this
+    }*/
+    switch(e.type_of()) {
+        case Add:
+            os << '(' << *e.left << ") + (" << *e.right << ')';
+            break;
+        case Sub:
+            os << '(' << *e.left << ") - (" << *e.right << ')';
+            break;
+        case Mul:
+            os << '(' << *e.left << ") * (" << *e.right << ')';
+            break;
+        case Div:
+            os << '(' << *e.left << ") / (" << *e.right << ')';
+            break;
+        case Sin:
+            os << "sin(" << *e.left << ')';
+            break;
+        case Cos:
+            os << "sin(" << *e.left << ')';
+            break;
+        case Tan:
+            os << "sin(" << *e.left << ')';
+            break;
+        case Num:
+            os << e.get_n();
+            break;
+        case Arg:
+            os << 'x';
+    }
+    return os;
+}
 
 int main() {
+    Expr a(10), b(10), c(10);
+    cout << a << endl;
+    cout << b << endl;
+    cout << c << endl;
     return 0;
 }
