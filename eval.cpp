@@ -132,37 +132,57 @@ double Expr::get_n() const {
 
 ostream & operator<<(ostream & os, const Expr & e) {
     etype this_type = e.type_of();
-    /*if(this_type == Arg)
-    if(this_type > fun_arity_1) {
-        if(this
-    }*/
-    switch(e.type_of()) {
-        case Add:
-            os << '(' << *e.left << ") + (" << *e.right << ')';
-            break;
-        case Sub:
-            os << '(' << *e.left << ") - (" << *e.right << ')';
-            break;
-        case Mul:
-            os << '(' << *e.left << ") * (" << *e.right << ')';
-            break;
-        case Div:
-            os << '(' << *e.left << ") / (" << *e.right << ')';
-            break;
-        case Sin:
-            os << "sin(" << *e.left << ')';
-            break;
-        case Cos:
-            os << "sin(" << *e.left << ')';
-            break;
-        case Tan:
-            os << "sin(" << *e.left << ')';
-            break;
-        case Num:
-            os << e.get_n();
-            break;
-        case Arg:
-            os << 'x';
+    if(this_type == Arg) {
+        os << 'x';
+        return os;
+    }
+    else if(this_type == Num) {
+        os << e.get_n();
+        return os;
+    }
+    else if(this_type > fun_arity_1) {
+        switch(this_type) {
+            case Sin:
+                os << "sin(" << *e.left << ')';
+                break;
+            case Cos:
+                os << "sin(" << *e.left << ')';
+                break;
+            case Tan:
+                os << "sin(" << *e.left << ')';
+        }
+        return os;
+    }
+    else { // arity = 2
+        etype ltype = (*e.left).type_of(),
+              rtype = (*e.right).type_of();
+        if(ltype > fun_arity_2 ||
+            (((this_type == Add) || (this_type == Sub)) && ((ltype == Add) || (ltype == Sub))) ||
+            (((this_type == Mul) || (this_type == Div)) && ((ltype == Mul) || (ltype == Div))))
+            os << *e.left;
+        else
+            os << '(' << *e.left << ')';
+        
+        switch(this_type) {
+            case Add:
+                os << " + ";
+                break;
+            case Sub:
+                os << " - ";
+                break;
+            case Mul:
+                os << " * ";
+                break;
+            case Div:
+                os << " / ";
+        }
+        
+        if(rtype > fun_arity_2 ||
+            (((this_type == Add) || (this_type == Sub)) && ((rtype == Add) || (rtype == Sub))) ||
+            (((this_type == Mul) || (this_type == Div)) && ((rtype == Mul) || (rtype == Div))))
+            os << *e.right;
+        else
+            os << '(' << *e.right << ')';
     }
     return os;
 }
