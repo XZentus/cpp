@@ -144,6 +144,11 @@ void Expr::mutate(const int & depth) {
             n += mut_rng(rd);
         return;
     }
+    
+    if(type <= fun_arity_1 && r1 < MUTATE_FUN ||
+       type == Arg         && r1 < MUTATE_ARG) {
+        // TODO: ...
+    }
     // TODO: ...
 /*         if depth == 0 {
             return;
