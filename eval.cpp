@@ -1,6 +1,9 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <vector>
+#include <limits>
+#include <algorithm>
 
 #include <cmath>
 
@@ -43,34 +46,42 @@ enum etype { Add, Sub, Mul, Div, // arity 2
 const auto fun_arity_2 = Div;
 const auto fun_arity_1 = Tan;
 
+typedef double(*function)(const double &);
+
 class Expr {
     
     etype type;
+public:
     
     unique_ptr<Expr> left;
     unique_ptr<Expr> right;
     double n;
-
-public:    
+    
     Expr(const int &);
+    Expr(const Expr &);
     
-    double operator()(const double &);
-    double eval(const double &);
+    double operator()(const double &) const;
+    double eval(const double &) const;
+    double calc_fitness(const vector<double> &) const;
     
-    void simplify(const int &);
-    void mutate(const int &);
+    void simplify();
+    bool mutate(const int &);
     
     etype type_of() const;
     double get_n() const;
+    Expr * get_left() const;
+    Expr * get_right() const;
+    
+    Expr & operator=(const Expr & e);
     
     friend ostream & operator<<(ostream &, const Expr &);
 };
 
-double Expr::eval(const double & x) {
+double Expr::eval(const double & x) const {
     return (*this)(x);
 }
 
-double Expr::operator()(const double & x) {
+double Expr::operator()(const double & x) const {
     double l = 0, r = 0;
     if(type < Num)
         l = left->eval(x);
@@ -130,47 +141,66 @@ Expr::Expr(const int & depth) {
     }
 }
 
-void Expr::mutate(const int & depth) {
+Expr::Expr(const Expr & e): type(e.type_of()), n(e.get_n()) {
+    //cout << "Expr::Expr(const Expr & e):" << e << endl;
+    if(e.left)
+        left.reset(new Expr(*e.left));
+    if(e.right)
+        right.reset(new Expr(*e.right));
+}
+
+Expr & Expr::operator=(const Expr & e) {
+    type = e.type_of();
+    n = e.get_n();
+    left = make_unique<Expr>(*e.get_left());
+    right = make_unique<Expr>(*e.get_right());
+    return *this;
+}
+
+Expr * Expr::get_left() const {
+    return left.get();
+}
+
+Expr * Expr::get_right() const {
+    return left.get();
+}
+
+void Expr::simplify() { }
+
+bool Expr::mutate(const int & depth) {
     double r1 = dis(rd);
     
     if(depth <= 0) {
         if(type == Arg && r1 < MUTATE_FUN) {
             type = Num;
             n = new_rng(rd);
+            return true;
         }
-        else if(type == Num && r1 < MUTATE_FUN)
+        else if(type == Num && r1 < MUTATE_FUN) {
             type = Arg;
-        else if(type == Num && r1 < MUTATE_NUM)
+            return true;
+        }
+        else if(type == Num && r1 < MUTATE_NUM) {
             n += mut_rng(rd);
-        return;
+            return true;
+        }
+        return false;
     }
     
-    if(type <= fun_arity_1 && r1 < MUTATE_FUN ||
-       type == Arg         && r1 < MUTATE_ARG) {
-        // TODO: ...
+    if(type == Num         && r1 < MUTATE_NUM) {
+        n += mut_rng(rd);
+        return true;
     }
-    // TODO: ...
-/*         if depth == 0 {
-            return;
-        }
-        let mut rng = thread_rng();
-        let p1: f64 = rng.gen();
-        let d1 = depth - 1;
-
-        if (p1 < MUTATE_FUN && self.is_fun()) ||
-           (p1 < MUTATE_ARG && self.is_arg()) {
-            *self = Expr::generate_with_depth(depth);
-        }
-
-        match self {
-            Add(e1, e2) | Sub(e1, e2) |
-            Mul(e1, e2) | Div(e1, e2)   => { e1.mutate_with_depth(d1); e2.mutate_with_depth(d1) },
-            Sin(e1) | Cos(e1) | Tan(e1) => { e1.mutate_with_depth(d1); },
-            Const(n)                    => if p1 < MUTATE_NUM {
-                    *n += rng.gen_range(MUTATE_MIN, MUTATE_MAX);
-                }
-            _ => (),
-        } */
+    else if((type <= fun_arity_1 && r1 < MUTATE_FUN) ||
+            (type == Arg         && r1 < MUTATE_ARG)) {
+        left = make_unique<Expr>(depth - 1);
+        type = static_cast<etype>(rd() % (fun_arity_2 + 1));
+        if(type <= fun_arity_2)
+            right = make_unique<Expr>(depth - 1);
+        return true;
+    }
+    return (bool(left)  &&  left.get()->mutate(depth - 1)) ||
+           (bool(right) && right.get()->mutate(depth - 1));
 }
 
 double Expr::get_n() const {
@@ -193,6 +223,7 @@ ostream & operator<<(ostream & os, const Expr & e) {
                 break;
             case Tan:
                 os << "sin(" << *e.left << ')';
+            default:;
         }
     }
     else { // arity = 2
@@ -217,6 +248,7 @@ ostream & operator<<(ostream & os, const Expr & e) {
                 break;
             case Div:
                 os << " / ";
+            default:;
         }
         
         if(rtype > fun_arity_2 ||
@@ -229,10 +261,127 @@ ostream & operator<<(ostream & os, const Expr & e) {
     return os;
 }
 
+double Expr::calc_fitness(const vector<double> & points) const {
+      double result = 0;
+      const double pos_inf = numeric_limits<double>::infinity();
+      const double neg_inf = -(numeric_limits<double>::infinity());
+      for(size_t x = 0; x < FITNESS_POINTS; x += 1) {
+          const auto & p = points[x];
+          double fx = this->eval(FITNESS_MIN + FITNESS_STEP * double(x));
+          if(p == pos_inf || p == neg_inf) {
+              if(p != fx)
+                  result += EXCEPTION_WEIGHT;
+          }
+          else {
+              double addition = abs(fx - p);
+              if(addition == numeric_limits<double>::quiet_NaN() ||
+                 addition == numeric_limits<double>::signaling_NaN())
+                  addition = EXCEPTION_WEIGHT;
+              result += addition;
+          }
+
+      }
+      return result;
+}
+
+void make_points(function f, vector<double> & v) {
+    v.clear();
+    v.reserve(FITNESS_POINTS);
+    
+    for(int x = 0; x < FITNESS_POINTS; x += 1)
+        v.emplace_back(f(FITNESS_MIN + FITNESS_STEP * double(x)));
+}
+
+void train(vector<Expr> & population, const vector<double> & points, const size_t & generations) {
+    const size_t pop_size = population.size();
+    vector<pair<Expr, double>> db;
+    db.reserve(population.size());
+
+    for(size_t i = 0; i < pop_size; i += 1) {
+        auto & expr = population[i];
+        double fit = expr.calc_fitness(points);
+
+        db.emplace_back(move(expr), fit);
+    }
+    population.clear();
+
+    for(size_t i = 0; i < generations; i += 1) {
+        //if(i % 100 == 0)
+            cout << "Generation " << i << "..." << endl;
+
+        //mutate, add mutated
+        const auto current_len = db.size();
+        
+        for(size_t i = 0; i < current_len; i += 1) {
+            cout << "   INIT:     " << db[i].first << endl;
+            Expr new_expr(db[i].first);
+            cout << "    DUP:     " << new_expr << endl;
+            if(!new_expr.mutate(DEPTH))
+                continue;
+            //new_expr.simplify();
+            cout << "MUTATED:     " << new_expr << endl;
+            double fit = new_expr.calc_fitness(points);
+            cout << "FITNESS:     " << fit << endl;
+            if(fit < db[i].second) {
+                if(dis(rd) < CHANCE_DUPLICATE)
+                    db.emplace_back(move(new_expr), fit);
+                else {
+                    //db[i].first = move(new_expr); //TODO
+                    db[i].second = fit;
+                }
+            }
+            cout << "  Next iteration" << endl;
+        }
+        cout << "\tMutate done" << endl;
+
+        //sort
+        sort(db.begin(), db.end(), [](const auto & a, const auto & b){ return a.second < b.second; });
+        cout << "\tSort done" << endl;
+
+        //drop
+        db.erase(db.begin() + INDIVIDUALS_SURVIVE, db.end());
+        cout << "\tDrop done" << endl;
+
+        //add new
+        for(size_t i = INDIVIDUALS_SURVIVE; i < POPULATION_SIZE; i += 1) {
+            auto new_expr = Expr(DEPTH);
+            double fit = new_expr.calc_fitness(points);
+            db.emplace_back(move(new_expr), fit);
+        }
+        cout << "\tNew creatures done" << endl;
+    }
+
+    population.clear();
+    for(size_t i = 0; i < POPULATION_SIZE; i += 1) {
+        auto e = db[i].first;
+        e.simplify();
+        population.emplace_back(move(e));
+    }
+}
+
+double target_fun(const double & x) {
+    return cos(2.16327*x) + x*0.3423 - 3.0;
+}
+
 int main() {
-    Expr a(10), b(10), c(10);
-    cout << a << endl;
-    cout << b << endl;
-    cout << c << endl;
+    vector<Expr> population;
+    population.reserve(POPULATION_SIZE);
+    
+    for(size_t i = 0; i < POPULATION_SIZE; i += 1)
+        population.emplace_back(10);
+    
+    vector<double> points;
+    make_points(target_fun, points);
+    
+    for(size_t i = 0; i < POPULATION_SIZE; i += 1)
+        cout << i << ": " << population[i] << endl;
+
+    cout << "Trainig begin..." << endl;
+    train(population, points, 200);
+    cout << "Trainig done" << endl;
+
+    for(size_t i = 0; i < 5; i += 1)
+        cout << population[i] << "\nFitness: " << population[i].calc_fitness(points) << endl;
+    
     return 0;
 }
