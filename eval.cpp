@@ -59,6 +59,11 @@ const auto fun_arity_1 = Tan;
 
 typedef double(*function)(const double &);
 
+struct SimplifyResult {
+    bool is_const;
+    double value;
+};
+
 class Expr {
     
     etype type;
@@ -77,7 +82,7 @@ public:
     double eval(const double &) const;
     double calc_fitness(const vector<double> &) const;
     
-    void simplify();
+    SimplifyResult simplify();
     bool mutate(const int &);
     
     etype type_of() const;
@@ -127,12 +132,6 @@ etype Expr::type_of() const {
 }
 
 Expr::Expr(const int & depth) {
-    //cout << "Expr::Expr(const int & depth):" << depth << endl;
-    if(depth > 50) {
-        cerr << "!!!!!!!!!!!! depth = " << depth << endl;
-        throw("STOP");
-        return;
-    }
     double r1 = dis();
     
     if(depth < 1) {
@@ -194,7 +193,58 @@ Expr * Expr::get_right() const {
     return left.get();
 }
 
-void Expr::simplify() { }
+SimplifyResult Expr::simplify() {
+    if(type == Arg)
+        return {false, 0};
+    else if(type == Num)
+        return {true, n};
+    
+    SimplifyResult lsr {false, 0}, rsr {false, 0};
+    if(left)
+        lsr = left->simplify();
+    if(right)
+        rsr = right->simplify();
+    
+    if(lsr.is_const && type > fun_arity_2 ) { // sin, cos, tan (const)
+        switch(type) {
+            case Sin:
+                n = sin(lsr.value);
+                break;
+            case Cos:
+                n = cos(lsr.value);
+                break;
+            case Tan:
+                n = tan(lsr.value);
+                break;
+            default:;
+        }
+        left.reset(nullptr);
+        type = Num;
+        return {true, n};
+    }
+    if(type <= fun_arity_2 && lsr.is_const && rsr.is_const) {
+        switch(type) {
+            case Add:
+                n = lsr.value + rsr.value;
+                break;
+            case Sub:
+                n = lsr.value - rsr.value;
+                break;
+            case Mul:
+                n = lsr.value * rsr.value;
+                break;
+            case Div:
+                n = lsr.value / rsr.value;
+                break;
+            default:;
+        }
+        left.reset(nullptr);
+        right.reset(nullptr);
+        type = Num;
+        return {true, n};
+    }
+    return {false, 0};
+}
 
 bool Expr::mutate(const int & depth) {
     double r1 = dis();
@@ -377,7 +427,7 @@ void train(vector<Expr> & population, const vector<double> & points, const size_
     population.clear();
     for(size_t i = 0; i < POPULATION_SIZE; i += 1) {
         auto e = db[i].first;
-        e.simplify();
+        //e.simplify();
         population.emplace_back(move(e));
     }
 }
@@ -398,11 +448,14 @@ int main() {
     make_points(target_fun, points);
 
     cout << "Trainig begin..." << endl;
-    train(population, points, 2000);
+    train(population, points, 1000);
     cout << "Trainig done" << endl;
 
-    for(size_t i = 0; i < INDIVIDUALS_SURVIVE; i += 1)
+    for(size_t i = 0; i < 10; i += 1) {
         cout << population[i] << "\nFitness: " << population[i].calc_fitness(points) << endl;
+        population[i].simplify();
+        cout << population[i] << "\nFitness: " << population[i].calc_fitness(points) << "\n----------------------------------------\n" << endl;
+    }
     
     return 0;
 }
