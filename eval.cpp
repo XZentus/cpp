@@ -51,14 +51,16 @@ typedef double(*function)(const double &);
 class Expr {
     
     etype type;
-public:
     
     unique_ptr<Expr> left;
     unique_ptr<Expr> right;
     double n;
     
-    Expr(const int &);
+public:
+
+    explicit Expr(const int &);
     Expr(const Expr &);
+    Expr(Expr &&);
     
     double operator()(const double &) const;
     double eval(const double &) const;
@@ -114,6 +116,12 @@ etype Expr::type_of() const {
 }
 
 Expr::Expr(const int & depth) {
+    //cout << "Expr::Expr(const int & depth):" << depth << endl;
+    if(depth > 50) {
+        cerr << "!!!!!!!!!!!! depth = " << depth << endl;
+        throw("STOP");
+        return;
+    }
     double r1 = dis(rd);
     
     if(depth < 1) {
@@ -141,19 +149,29 @@ Expr::Expr(const int & depth) {
     }
 }
 
-Expr::Expr(const Expr & e): type(e.type_of()), n(e.get_n()) {
-    //cout << "Expr::Expr(const Expr & e):" << e << endl;
+Expr::Expr(const Expr & e): type(e.type), n(e.n) {
     if(e.left)
         left.reset(new Expr(*e.left));
     if(e.right)
         right.reset(new Expr(*e.right));
 }
 
+Expr::Expr(Expr && e): type(e.type_of()), n(e.get_n()) {
+    left.swap(e.left);
+    right.swap(e.right);
+}
+
 Expr & Expr::operator=(const Expr & e) {
-    type = e.type_of();
-    n = e.get_n();
-    left = make_unique<Expr>(*e.get_left());
-    right = make_unique<Expr>(*e.get_right());
+    type = e.type;
+    n = e.n;
+    if(e.left)
+        left.reset(new Expr(*e.left));
+    else
+        left.reset(nullptr);
+    if(e.right)
+        right.reset(new Expr(*e.right));
+    else
+        right.reset(nullptr);
     return *this;
 }
 
@@ -306,41 +324,35 @@ void train(vector<Expr> & population, const vector<double> & points, const size_
     population.clear();
 
     for(size_t i = 0; i < generations; i += 1) {
-        //if(i % 100 == 0)
+        if(i % 100 == 0)
             cout << "Generation " << i << "..." << endl;
 
         //mutate, add mutated
         const auto current_len = db.size();
         
         for(size_t i = 0; i < current_len; i += 1) {
-            cout << "   INIT:     " << db[i].first << endl;
             Expr new_expr(db[i].first);
-            cout << "    DUP:     " << new_expr << endl;
             if(!new_expr.mutate(DEPTH))
                 continue;
-            //new_expr.simplify();
-            cout << "MUTATED:     " << new_expr << endl;
             double fit = new_expr.calc_fitness(points);
-            cout << "FITNESS:     " << fit << endl;
             if(fit < db[i].second) {
                 if(dis(rd) < CHANCE_DUPLICATE)
                     db.emplace_back(move(new_expr), fit);
                 else {
-                    //db[i].first = move(new_expr); //TODO
+                    db[i].first = new_expr;
                     db[i].second = fit;
                 }
             }
-            cout << "  Next iteration" << endl;
         }
-        cout << "\tMutate done" << endl;
+        //cout << "\tMutate done" << endl;
 
         //sort
         sort(db.begin(), db.end(), [](const auto & a, const auto & b){ return a.second < b.second; });
-        cout << "\tSort done" << endl;
+        //cout << "\tSort done" << endl;
 
         //drop
         db.erase(db.begin() + INDIVIDUALS_SURVIVE, db.end());
-        cout << "\tDrop done" << endl;
+        //cout << "\tDrop done" << endl;
 
         //add new
         for(size_t i = INDIVIDUALS_SURVIVE; i < POPULATION_SIZE; i += 1) {
@@ -348,7 +360,7 @@ void train(vector<Expr> & population, const vector<double> & points, const size_
             double fit = new_expr.calc_fitness(points);
             db.emplace_back(move(new_expr), fit);
         }
-        cout << "\tNew creatures done" << endl;
+        //cout << "\tNew creatures done" << endl;
     }
 
     population.clear();
