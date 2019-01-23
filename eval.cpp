@@ -237,10 +237,10 @@ ostream & operator<<(ostream & os, const Expr & e) {
                 os << "sin(" << *e.left << ')';
                 break;
             case Cos:
-                os << "sin(" << *e.left << ')';
+                os << "cos(" << *e.left << ')';
                 break;
             case Tan:
-                os << "sin(" << *e.left << ')';
+                os << "tan(" << *e.left << ')';
             default:;
         }
     }
@@ -384,15 +384,12 @@ int main() {
     
     vector<double> points;
     make_points(target_fun, points);
-    
-    for(size_t i = 0; i < POPULATION_SIZE; i += 1)
-        cout << i << ": " << population[i] << endl;
 
     cout << "Trainig begin..." << endl;
-    train(population, points, 200);
+    train(population, points, 2000);
     cout << "Trainig done" << endl;
 
-    for(size_t i = 0; i < 5; i += 1)
+    for(size_t i = 0; i < INDIVIDUALS_SURVIVE; i += 1)
         cout << population[i] << "\nFitness: " << population[i].calc_fitness(points) << endl;
     
     return 0;
