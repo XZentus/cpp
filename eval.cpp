@@ -1,11 +1,13 @@
 #include <iostream>
 #include <memory>
-#include <random>
+//#include <random>
 #include <vector>
 #include <limits>
 #include <algorithm>
 
 #include <cmath>
+#include <ctime>
+#include <cstdlib>
 
 using namespace std;
 
@@ -33,11 +35,20 @@ const double EXCEPTION_WEIGHT     = 10000.0;
 
 const size_t DEPTH                = 10;
 
-random_device rd;
-mt19937 gen(rd());
-uniform_real_distribution<> dis(0.0, 1.0);
-uniform_real_distribution<> mut_rng(MUTATE_MIN, MUTATE_MAX);
-uniform_real_distribution<> new_rng(MUTATE_MIN, MUTATE_MAX);
+//random_device rd;
+//mt19937 gen(rd());
+//uniform_real_distribution<> dis(0.0, 1.0);
+double dis() {
+    return double(rand()) / double(RAND_MAX);
+}
+//uniform_real_distribution<> mut_rng(MUTATE_MIN, MUTATE_MAX);
+double mut_rng() {
+    return dis() * (MUTATE_MAX - MUTATE_MIN) - MUTATE_MIN;
+}
+//uniform_real_distribution<> new_rng(MIN_VAL, MAX_VAL);
+double new_rng() {
+    return dis() * (MAX_VAL - MIN_VAL) - MIN_VAL;
+}
 
 enum etype { Add, Sub, Mul, Div, // arity 2
              Sin, Cos, Tan,      // arity 1
@@ -122,21 +133,21 @@ Expr::Expr(const int & depth) {
         throw("STOP");
         return;
     }
-    double r1 = dis(rd);
+    double r1 = dis();
     
     if(depth < 1) {
         if(r1 < ARG_PROBABILITY)
             type = Arg;
         else {
             type = Num;
-            n = new_rng(rd);
+            n = new_rng();
         }
         return;
     }
     
     if(r1 < FUNCTION_PROBABILITY) {
         left = make_unique<Expr>(depth - 1);
-        type = static_cast<etype>(rd() % (fun_arity_2 + 1));
+        type = static_cast<etype>(rand() % (fun_arity_2 + 1));
         if(type <= fun_arity_2)
             right = make_unique<Expr>(depth - 1);
         return;
@@ -145,7 +156,7 @@ Expr::Expr(const int & depth) {
         type = Arg;
     else {
         type = Num;
-        n = new_rng(rd);
+        n = new_rng();
     }
 }
 
@@ -186,12 +197,12 @@ Expr * Expr::get_right() const {
 void Expr::simplify() { }
 
 bool Expr::mutate(const int & depth) {
-    double r1 = dis(rd);
+    double r1 = dis();
     
     if(depth <= 0) {
         if(type == Arg && r1 < MUTATE_FUN) {
             type = Num;
-            n = new_rng(rd);
+            n = new_rng();
             return true;
         }
         else if(type == Num && r1 < MUTATE_FUN) {
@@ -199,20 +210,20 @@ bool Expr::mutate(const int & depth) {
             return true;
         }
         else if(type == Num && r1 < MUTATE_NUM) {
-            n += mut_rng(rd);
+            n += mut_rng();
             return true;
         }
         return false;
     }
     
     if(type == Num         && r1 < MUTATE_NUM) {
-        n += mut_rng(rd);
+        n += mut_rng();
         return true;
     }
     else if((type <= fun_arity_1 && r1 < MUTATE_FUN) ||
             (type == Arg         && r1 < MUTATE_ARG)) {
         left = make_unique<Expr>(depth - 1);
-        type = static_cast<etype>(rd() % (fun_arity_2 + 1));
+        type = static_cast<etype>(rand() % (fun_arity_2 + 1));
         if(type <= fun_arity_2)
             right = make_unique<Expr>(depth - 1);
         return true;
@@ -336,7 +347,7 @@ void train(vector<Expr> & population, const vector<double> & points, const size_
                 continue;
             double fit = new_expr.calc_fitness(points);
             if(fit < db[i].second) {
-                if(dis(rd) < CHANCE_DUPLICATE)
+                if(dis() < CHANCE_DUPLICATE)
                     db.emplace_back(move(new_expr), fit);
                 else {
                     db[i].first = new_expr;
@@ -376,6 +387,7 @@ double target_fun(const double & x) {
 }
 
 int main() {
+    srand(time(0));
     vector<Expr> population;
     population.reserve(POPULATION_SIZE);
     
