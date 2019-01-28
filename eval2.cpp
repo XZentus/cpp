@@ -127,25 +127,25 @@ void Expr::operator()() {
         const vector<double> & r = right->get_result();
         switch(type) {
             case Add:
-                for(auto liter = l.cbegin(), riter = r.cend();
+                for(auto liter = l.cbegin(), riter = r.cbegin();
                     liter != l.end() && riter != r.cend();
                     ++liter, ++riter)
                     result.push_back(*liter + *riter);
                 break;
             case Sub:
-                for(auto liter = l.cbegin(), riter = r.cend();
+                for(auto liter = l.cbegin(), riter = r.cbegin();
                     liter != l.end() && riter != r.cend();
                     ++liter, ++riter)
                     result.push_back(*liter - *riter);
                 break;
             case Mul:
-                for(auto liter = l.cbegin(), riter = r.cend();
+                for(auto liter = l.cbegin(), riter = r.cbegin();
                     liter != l.end() && riter != r.cend();
                     ++liter, ++riter)
                     result.push_back(*liter * *riter);
                 break;
             case Div:
-                for(auto liter = l.cbegin(), riter = r.cend();
+                for(auto liter = l.cbegin(), riter = r.cbegin();
                     liter != l.end() && riter != r.cend();
                     ++liter, ++riter)
                     result.push_back(*liter / *riter);
